@@ -1,4 +1,5 @@
 from data_utils import DataUtils
+import joblib
 
 
 class DataModel:
@@ -29,13 +30,18 @@ class DataModel:
         self.test_idx_x_batches = test_idx_x_batches
         self.test_y_batches = test_y_batches
         self.test_word_len_batches = test_word_len_batches
-
+        self.fold_num = fold_num
     def choose_fold(self, fold_idx):
-        return self.k_train_idx_x_batches_list[fold_idx], self.k_train_y_batches_list[fold_idx], \
-               self.k_train_word_len_batches_list[fold_idx], \
-               self.k_develop_idx_x_batches_list[fold_idx], \
-               self.k_develop_y_batches_list[fold_idx], self.k_develop_word_len_batches_list[fold_idx]
-
+        if self.fold_num != 1:
+            return self.k_train_idx_x_batches_list[fold_idx], self.k_train_y_batches_list[fold_idx], \
+                   self.k_train_word_len_batches_list[fold_idx], \
+                   self.k_develop_idx_x_batches_list[fold_idx], \
+                   self.k_develop_y_batches_list[fold_idx], self.k_develop_word_len_batches_list[fold_idx]
+        else:
+            return self.k_train_idx_x_batches_list[fold_idx], self.k_train_y_batches_list[fold_idx], \
+                   self.k_train_word_len_batches_list[fold_idx], \
+                   [], \
+                   [], []
     def get_develop_data(self):
         return self.develop_idx_x_batches, self.develop_y_batches, self.develop_word_len_batches,
 
@@ -65,22 +71,37 @@ class DataModel:
         k_train_idx_x_batches_list, k_train_y_batches_list, k_train_word_len_batches_list = [], [], []
         k_develop_idx_x_batches_list, k_develop_y_batches_list, k_develop_word_len_batches_list = [], [], []
 
-        for fold_idx in range(fold_num):
+        if fold_num != 1:
+            for fold_idx in range(fold_num):
+                k_train_idx_x_batches, k_train_y_batches, k_train_word_len_batches = utils.encoder_data2idx_batch(
+                    k_fold_x_train[fold_idx],
+                    k_fold_y_train[fold_idx])
+                k_train_idx_x_batches_list.append(k_train_idx_x_batches)
+                k_train_y_batches_list.append(k_train_y_batches)
+                k_train_word_len_batches_list.append(k_train_word_len_batches)
+
+                k_develop_idx_x_batches, k_develop_y_batches, k_develop_word_len_batches = utils.encoder_data2idx_batch(
+                    k_fold_x_test[fold_idx],
+                    k_fold_y_test[fold_idx])
+                k_develop_idx_x_batches_list.append(k_develop_idx_x_batches)
+                k_develop_y_batches_list.append(k_develop_y_batches)
+                k_develop_word_len_batches_list.append(k_develop_word_len_batches)
+        else:
             k_train_idx_x_batches, k_train_y_batches, k_train_word_len_batches = utils.encoder_data2idx_batch(
-                k_fold_x_train[fold_idx],
-                k_fold_y_train[fold_idx])
+                k_fold_x_train[0],
+                k_fold_y_train[0])
             k_train_idx_x_batches_list.append(k_train_idx_x_batches)
             k_train_y_batches_list.append(k_train_y_batches)
             k_train_word_len_batches_list.append(k_train_word_len_batches)
-
-            k_develop_idx_x_batches, k_develop_y_batches, k_develop_word_len_batches = utils.encoder_data2idx_batch(
-                k_fold_x_test[fold_idx],
-                k_fold_y_test[fold_idx])
-            k_develop_idx_x_batches_list.append(k_develop_idx_x_batches)
-            k_develop_y_batches_list.append(k_develop_y_batches)
-            k_develop_word_len_batches_list.append(k_develop_word_len_batches)
-
         return k_train_idx_x_batches_list, k_train_y_batches_list, k_train_word_len_batches_list, \
                k_develop_idx_x_batches_list, k_develop_y_batches_list, k_develop_word_len_batches_list, \
                develop_idx_x_batches, develop_y_batches, develop_word_len_batches, \
                test_idx_x_batches, test_y_batches, test_word_len_batches,
+
+
+if __name__ == "__main__":
+    word2idx = joblib.load("./dict/word2idx.pkl")
+    label2idx = joblib.load("./dict/label_dict.pkl")
+    data_model = DataModel(batch_size=64, fold_num=1, sentence_len=50, word2idx=word2idx,
+                           label2idx=label2idx)
+    print('hello')

@@ -88,7 +88,6 @@ class DataUtils:
 
     @staticmethod
     def k_fold(train_sentences, train_labels, k):
-        skf = StratifiedKFold(n_splits=k, shuffle=True, random_state=2)
 
         x_train_k_fold = []
         y_train_k_fold = []
@@ -96,15 +95,18 @@ class DataUtils:
         x_test_k_fold = []
         y_test_k_fold = []
 
-        for train_index, test_index in skf.split(train_sentences, train_labels):
-            x_train_k_fold.append(train_sentences[train_index])
-            y_train_k_fold.append(train_labels[train_index])
+        if k == 1:
+            return [train_sentences], [train_labels], [], []
+        else:
+            skf = StratifiedKFold(n_splits=k, shuffle=True, random_state=2)
+            for train_index, test_index in skf.split(train_sentences, train_labels):
+                x_train_k_fold.append(train_sentences[train_index])
+                y_train_k_fold.append(train_labels[train_index])
 
-            x_test_k_fold.append(train_sentences[test_index])
-            y_test_k_fold.append(train_labels[test_index])
+                x_test_k_fold.append(train_sentences[test_index])
+                y_test_k_fold.append(train_labels[test_index])
 
         return x_train_k_fold, y_train_k_fold, x_test_k_fold, y_test_k_fold
-
 
 
 if __name__ == '__main__':

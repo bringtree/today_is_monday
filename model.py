@@ -112,44 +112,55 @@ class Model():
             self.loss = tf.reduce_mean(cross_entropy)
 
         with tf.variable_scope("optimizer_function"):
-            # optimizer = tf.train.AdamOptimizer(name="a_optimizer", learning_rate=self.learning_rate)
-            all_vars = tf.trainable_variables()
-            optimizer = tf.keras.optimizers.SGD(lr=self.learning_rate, decay=0.0005).get_updates(self.loss,
-                                                                                                 params=all_vars)
-            self.train_op = optimizer
+            # all_vars = tf.trainable_variables()
+            # optimizer = tf.keras.optimizers.SGD(lr=self.learning_rate, decay=0.0005).get_updates(self.loss,
+            #                                                                                      params=all_vars)
+            # self.train_op = optimizer
+            #
+            optimizer = tf.train.AdamOptimizer(name="a_optimizer", learning_rate=self.learning_rate)
+            self.grads, self.vars = zip(*optimizer.compute_gradients(self.loss))
+            self.gradients, _ = tf.clip_by_global_norm(self.grads, 5)  # clip gradients
+            self.train_op = optimizer.apply_gradients(zip(self.gradients, self.vars))
 
-            # self.grads, self.vars = zip(*optimizer.compute_gradients(self.loss))
-            # self.gradients, _ = tf.clip_by_global_norm(self.grads, 5)  # clip gradients
-            # self.train_op = optimizer.apply_gradients(zip(self.gradients, self.vars))
         with tf.variable_scope("visual_score"):
 
             self.develop_accuracy_placeholder = tf.placeholder(shape=None, dtype=tf.float32,
                                                                name="develop_accuracy_placeholder")
             self.test_accuracy_placeholder = tf.placeholder(shape=None, dtype=tf.float32,
                                                             name="test_accuracy_placeholder")
-            self.k_test_accuracy_placeholder = tf.placeholder(shape=None, dtype=tf.float32,
-                                                              name="k_test_accuracy_placeholder")
+            self.k_train_accuracy_placeholder = tf.placeholder(shape=None, dtype=tf.float32,
+                                                               name="k_train_accuracy_placeholder")
+            self.k_develop_accuracy_placeholder = tf.placeholder(shape=None, dtype=tf.float32,
+                                                                 name="k_develop_accuracy_placeholder")
 
             self.develop_f1_placeholder = tf.placeholder(shape=None, dtype=tf.float32,
                                                          name="develop_f1_placeholder")
             self.test_f1_placeholder = tf.placeholder(shape=None, dtype=tf.float32,
                                                       name="test_f1_placeholder")
-            self.k_test_f1_placeholder = tf.placeholder(shape=None, dtype=tf.float32,
-                                                        name="k_test_f1_placeholder")
+            self.k_train_f1_placeholder = tf.placeholder(shape=None, dtype=tf.float32,
+                                                         name="k_train_f1_placeholder")
+            self.k_develop_f1_placeholder = tf.placeholder(shape=None, dtype=tf.float32,
+                                                           name="k_develop_f1_placeholder")
 
             self.develop_accuracy_op = self.develop_accuracy_placeholder
             self.test_accuracy_op = self.test_accuracy_placeholder
-            self.k_test_accuracy_op = self.k_test_accuracy_placeholder
+            self.k_train_accuracy_op = self.k_train_accuracy_placeholder
+            self.k_develop_accuracy_op = self.k_develop_accuracy_placeholder
+
             self.develop_f1_op = self.develop_f1_placeholder
             self.test_f1_op = self.test_f1_placeholder
-            self.k_test_f1_op = self.k_test_f1_placeholder
+            self.k_train_f1_op = self.k_train_f1_placeholder
+            self.k_develop_f1_op = self.k_develop_f1_placeholder
 
             tf.summary.scalar("develop_accuracy", self.develop_accuracy_placeholder)
             tf.summary.scalar("test_accuracy", self.test_accuracy_placeholder)
-            tf.summary.scalar("k_test_accuracy", self.k_test_accuracy_placeholder)
+            tf.summary.scalar("k_train_accuracy", self.k_train_accuracy_placeholder)
+            # tf.summary.scalar("k_develop_accuracy", self.k_develop_accuracy_placeholder)
+
             tf.summary.scalar("develop_f1", self.develop_f1_placeholder)
             tf.summary.scalar("test_f1", self.test_f1_placeholder)
-            tf.summary.scalar("k_test_f1", self.k_test_f1_placeholder)
+            tf.summary.scalar("k_train_f1", self.k_train_f1_placeholder)
+            # tf.summary.scalar("k_develop_f1", self.k_develop_f1_placeholder)
 
     def enable_visual(self, merged_summary):
         self.merged_summary = merged_summary
@@ -267,30 +278,55 @@ class Model():
         else:
             return acc, f1_score
 
-    def visual_result(self, develop_accuracy,
+    def visual_result(self,
+                      develop_accuracy,
                       test_accuracy,
-                      k_test_accuracy,
+                      k_develop_accuracy,
+                      k_train_accuracy,
                       develop_f1,
                       test_f1,
-                      k_test_f1):
+                      k_develop_f1,
+                      k_train_f1, ):
         if self.merged_summary is None:
             raise Exception("check the merged_summary mode, it is None ")
-        result_board = self.sess.run([
-            self.develop_accuracy_op,
-            self.test_accuracy_op,
-            self.k_test_accuracy_op,
-            self.develop_f1_op,
-            self.test_f1_op,
-            self.k_test_f1_op,
-            self.merged_summary],
-            feed_dict={
-                self.develop_accuracy_placeholder: develop_accuracy,
-                self.test_accuracy_placeholder: test_accuracy,
-                self.k_test_accuracy_placeholder: k_test_accuracy,
-                self.develop_f1_placeholder: develop_f1,
-                self.test_f1_placeholder: test_f1,
-                self.k_test_f1_placeholder: k_test_f1,
-            })
+        if (k_develop_accuracy is None) and (k_develop_f1 is None):
+            result_board = self.sess.run([
+                self.develop_accuracy_op,
+                self.test_accuracy_op,
+                self.k_train_accuracy_op,
+                self.develop_f1_op,
+                self.test_f1_op,
+                self.k_train_f1_op,
+                self.merged_summary],
+                feed_dict={
+                    self.develop_accuracy_placeholder: develop_accuracy,
+                    self.test_accuracy_placeholder: test_accuracy,
+                    self.develop_f1_placeholder: develop_f1,
+                    self.test_f1_placeholder: test_f1,
+                    self.k_train_accuracy_placeholder: k_train_accuracy,
+                    self.k_train_f1_placeholder: k_train_f1,
+                })
+        else:
+            result_board = self.sess.run([
+                self.develop_accuracy_op,
+                self.test_accuracy_op,
+                self.k_train_accuracy_op,
+                self.k_develop_accuracy_op,
+                self.develop_f1_op,
+                self.test_f1_op,
+                self.k_train_f1_op,
+                self.k_develop_f1_op,
+                self.merged_summary],
+                feed_dict={
+                    self.develop_accuracy_placeholder: develop_accuracy,
+                    self.test_accuracy_placeholder: test_accuracy,
+                    self.k_train_accuracy_placeholder: k_train_accuracy,
+                    self.k_develop_accuracy_placeholder: k_develop_accuracy,
+                    self.develop_f1_placeholder: develop_f1,
+                    self.test_f1_placeholder: test_f1,
+                    self.k_train_f1_placeholder: k_train_f1,
+                    self.k_develop_f1_placeholder: k_develop_f1,
+                })
         return result_board[-1]
 
 
