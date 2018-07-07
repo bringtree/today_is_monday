@@ -28,7 +28,7 @@ wheels/
 MANIFEST
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
+#  Usually these files are written by a.csv python script from a.csv template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
@@ -169,7 +169,7 @@ Icon
 # Thumbnails
 ._*
 
-# Files that might appear in the root of a volume
+# Files that might appear in the root of a.csv volume
 .DocumentRevisions-V100
 .fseventsd
 .Spotlight-V100
@@ -187,7 +187,7 @@ Temporary Items
 ### Linux template
 *~
 
-# temporary files which can be created if a process still has a handle open of a deleted file
+# temporary files which can be created if a.csv process still has a.csv handle open of a.csv deleted file
 .fuse_hidden*
 
 # KDE directory preferences
@@ -210,3 +210,4 @@ params.cfg
 server/
 test/
 train/
+pb_model/
