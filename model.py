@@ -45,7 +45,7 @@ class Model():
         self.dropout_rate = tf.placeholder(shape=None, name='dropout_rate', dtype=tf.float32)
 
         with tf.variable_scope("bid_lstm_layer"):
-            def get_lstm():
+            def get_drop_lstm():
                 return tf.contrib.rnn.DropoutWrapper(
                     tf.contrib.rnn.LSTMCell(self.hidden_num, initializer=tf.orthogonal_initializer()),
                     input_keep_prob=self.dropout_rate,
@@ -60,9 +60,9 @@ class Model():
             # backward_drop = tf.contrib.rnn.DropoutWrapper(backward_lstm, input_keep_prob=self.dropout_rate,
             #                                               output_keep_prob=self.dropout_rate)
 
-            forward_drop_mul = tf.nn.rnn_cell.MultiRNNCell([get_lstm() for _ in range(self.layer_num)],
+            forward_drop_mul = tf.nn.rnn_cell.MultiRNNCell([get_drop_lstm() for _ in range(self.layer_num)],
                                                            state_is_tuple=True)
-            backward_drop_mul = tf.nn.rnn_cell.MultiRNNCell([get_lstm() for _ in range(self.layer_num)],
+            backward_drop_mul = tf.nn.rnn_cell.MultiRNNCell([get_drop_lstm() for _ in range(self.layer_num)],
                                                             state_is_tuple=True)
 
             # shape=(50, ?, 300) dtype=float32>
@@ -73,18 +73,6 @@ class Model():
                 sequence_length=self.input_length,
                 dtype=tf.float32,
                 time_major=True)
-            # encoder_outputs, encoder_final_state = tf.contrib.rnn.stack_bidirectional_dynamic_rnn(
-            #     forward_drop_mul,
-            #     backward_drop_mul,
-            #     sentence_input,
-            #     # initial_states_fw=tf.orthogonal_initializer(),
-            #     # initial_states_bw=tf.orthogonal_initializer(),
-            #     dtype=tf.float32,
-            #     sequence_length=self.input_length,
-            #     parallel_iterations=None,
-            #     time_major=True,
-            #     scope=None
-            # )
             # 300 + 300 + 300 + 300
             flatten_encoder_final_state = []
             for v in encoder_final_state:
